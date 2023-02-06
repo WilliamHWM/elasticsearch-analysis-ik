@@ -27,20 +27,52 @@ Install
 -------
 
 1.download or compile
+此项目支持8.6.0，如需匹配es版本就修改pom文件的对应依赖 <elasticsearch.version>8.6.0</elasticsearch.version>
+https://github.com/WilliamHWM/elasticsearch-analysis-ik/releases 编译程序打包
+修改es程序对应的jdk JAVA_HOME\lib\security路径下的java.policy或default.policy对应的security manager的配置
 
-* optional 1 - download pre-build package from here: https://github.com/medcl/elasticsearch-analysis-ik/releases
+grant codeBase "file: path to ik plugin/*" {
+permission java.security.AllPermission;
+};
 
-    create plugin folder `cd your-es-root/plugins/ && mkdir ik`
-    
-    unzip plugin to folder `your-es-root/plugins/ik`
+重启
+支持启动全量加载扩展词
+支持热更新扩展词
+mysql 扩展词表结构
 
-* optional 2 - use elasticsearch-plugin to install ( supported from version v5.5.1 ):
+CREATE TABLE `es_lexicon` (
+`id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '词库id',
+`create_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+`modify_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+`lexicon_text` varchar(40) NOT NULL COMMENT '词条关键词',
+`lexicon_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0扩展词库 1停用词库',
+`lexicon_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '词条状态 0正常 1暂停使用',
+`del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '作废标志 0正常 1作废',
+PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='ES远程扩展词库表'
+IKAnalyzer.cfg.xml
 
-    ```
-    ./bin/elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.0/elasticsearch-analysis-ik-6.3.0.zip
-    ```
-
-   NOTE: replace `6.3.0` to your own elasticsearch version
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<comment>IK Analyzer 扩展配置</comment>
+	<!--用户可以在这里配置自己的扩展字典 -->
+	<entry key="ext_dict"></entry>
+	 <!--用户可以在这里配置自己的扩展停止词字典-->
+	<entry key="ext_stopwords"></entry>
+	<!--用户可以在这里配置远程扩展字典 -->
+	<!-- <entry key="remote_ext_dict">words_location</entry> -->
+	<!--用户可以在这里配置远程扩展停止词字典-->
+	<!-- <entry key="remote_ext_stopwords">words_location</entry> -->
+	<!-- 连接地址 如果未配置,则不开启数据库同步 -->
+	<entry key="db_url"><![CDATA[jdbc:mysql://10.1.11.134:3306/post_bar?characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&connectTimeout=60000&socketTimeout=60000&autoReconnect=true&failOverReadOnly=false&useSSL=true&useUnicode=true]]></entry>
+	<!-- 数据库用户名 -->
+	<entry key="db_user">root</entry>
+	<!-- 数据库密码 -->
+	<entry key="db_password">123456</entry>
+	<!-- 同步间隔,单位:秒 -->
+	<entry key="db_reload_interval">10</entry>
+</properties>
 
 2.restart elasticsearch
 
